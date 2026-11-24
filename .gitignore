@@ -1,0 +1,24 @@
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.DS_Store
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+backups/
+
+# Database dumps / backups (may contain real data)
+*.dump
+*.sql
+*.bak
+inventory_erp_backup.*
+
+# Local tool settings
+.claude/
+.next/
+node_modules/

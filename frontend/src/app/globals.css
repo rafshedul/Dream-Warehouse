@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --font-geist-sans: Arial, Helvetica, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.dashboard-shell section {
+  animation: dashboard-enter 360ms ease-out both;
+}
+
+.dashboard-shell button,
+.dashboard-shell a,
+.dashboard-shell .rounded-2xl {
+  transition-duration: 180ms;
+}
+
+.dashboard-dark {
+  background: #0b1220 !important;
+  color: #e2e8f0 !important;
+}
+
+.dashboard-dark .bg-white {
+  background-color: #111c35 !important;
+}
+
+.dashboard-dark .bg-slate-50,
+.dashboard-dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+
+.dashboard-dark .text-slate-800,
+.dashboard-dark .text-slate-700,
+.dashboard-dark .text-slate-600 {
+  color: #e2e8f0 !important;
+}
+
+.dashboard-dark .text-slate-500,
+.dashboard-dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.dashboard-dark .border-slate-100,
+.dashboard-dark .border-slate-200 {
+  border-color: #334155 !important;
+}
+
+.dashboard-dark select,
+.dashboard-dark input {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
+}
+
+@keyframes dashboard-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell section,
+  .dashboard-shell button,
+  .dashboard-shell a,
+  .dashboard-shell .rounded-2xl {
+    animation: none !important;
+    transition: none !important;
+  }
+}

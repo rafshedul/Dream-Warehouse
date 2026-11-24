@@ -1,94 +1,144 @@
-from fastapi import APIRouter, Depends,HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.contact import Contact
-from app.schemas.contact import ContactCreate
+from app.models.user import User
+from app.schemas.contact import ContactCreate, ContactResponse
+from app.core.dependencies import require_roles
+from app.core.roles import UserRole
+
 
 router = APIRouter(
     prefix="/contacts",
-    tags=["Contacts"]
+    tags=["Contacts"],
 )
 
 
-@router.post("/")
+# Create Contact: Admin + Manager + Staff
+@router.post("/", response_model=ContactResponse, status_code=201)
 def create_contact(
-    contact: ContactCreate,
-    db: Session = Depends(get_db)
+    data: ContactCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles([
+            UserRole.ADMIN,
+            UserRole.MANAGER,
+            UserRole.STAFF,
+        ])
+    ),
 ):
-    new_contact = Contact(
-        name=contact.name,
-        phone=contact.phone,
-        address=contact.address
+    contact = Contact(
+        name=data.name,
+        phone=data.phone,
+        address=data.address,
     )
 
-    db.add(new_contact)
-    db.commit()
-    db.refresh(new_contact)
+    db.add(contact)
 
-    return new_contact
-@router.get("/")
-def get_contacts(db: Session = Depends(get_db)):
-    contacts = db.query(Contact).all()
+    try:
+        db.commit()
+        db.refresh(contact)
+        return contact
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Could not create contact.",
+        )
 
-    return contacts
 
-@router.get("/{contact_id}")
+# View All Contacts: Admin + Manager + Staff
+@router.get("/", response_model=list[ContactResponse])
+def get_contacts(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles([
+            UserRole.ADMIN,
+            UserRole.MANAGER,
+            UserRole.STAFF,
+        ])
+    ),
+):
+    return db.query(Contact).order_by(Contact.id).all()
+
+
+# View One Contact: Admin + Manager + Staff
+@router.get("/{contact_id}", response_model=ContactResponse)
 def get_contact(
     contact_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles([
+            UserRole.ADMIN,
+            UserRole.MANAGER,
+            UserRole.STAFF,
+        ])
+    ),
 ):
-    contact = db.query(Contact).filter(
-        Contact.id == contact_id
-    ).first()
+    contact = db.get(Contact, contact_id)
 
-    if not contact:
+    if contact is None:
         raise HTTPException(
             status_code=404,
-            detail="Contact not found"
+            detail="Contact not found",
         )
 
     return contact
-@router.put("/{contact_id}")
+
+
+# Update Contact: Admin + Manager + Staff
+@router.put("/{contact_id}", response_model=ContactResponse)
 def update_contact(
     contact_id: int,
-    contact: ContactCreate,
-    db: Session = Depends(get_db)
+    data: ContactCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles([
+            UserRole.ADMIN,
+            UserRole.MANAGER,
+            UserRole.STAFF,
+        ])
+    ),
 ):
-    existing_contact = db.query(Contact).filter(
-        Contact.id == contact_id
-    ).first()
+    contact = db.get(Contact, contact_id)
 
-    if not existing_contact:
+    if contact is None:
         raise HTTPException(
             status_code=404,
-            detail="Contact not found"
+            detail="Contact not found",
         )
 
-    existing_contact.name = contact.name
-    existing_contact.phone = contact.phone
-    existing_contact.address = contact.address
+    contact.name = data.name
+    contact.phone = data.phone
+    contact.address = data.address
 
     db.commit()
-    db.refresh(existing_contact)
+    db.refresh(contact)
 
-    return existing_contact
-@router.delete("/{contact_id}")
+    return contact
+
+
+# Delete Contact: Admin only
+@router.delete("/{contact_id}", status_code=204)
 def delete_contact(
     contact_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_roles([UserRole.ADMIN])
+    ),
 ):
-    contact = db.query(Contact).filter(
-        Contact.id == contact_id
-    ).first()
+    contact = db.get(Contact, contact_id)
 
-    if not contact:
+    if contact is None:
         raise HTTPException(
             status_code=404,
-            detail="Contact not found"
+            detail="Contact not found",
         )
 
     db.delete(contact)
     db.commit()
 
-    return {"message": "Contact deleted successfully"}
+    return Response(status_code=204)
